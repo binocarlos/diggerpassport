@@ -57,11 +57,9 @@ function mount(app, options){
       run the provider function providing the app and the 2 routing functions above
       
     */
-    providers[name].apply(null, [app, {
-      mountpath:options.mountpath,
-      httproutes:options.httproutes,
+    providers[name].apply(null, [app, _.extend({}, {
       provider:providerconfig
-    }])
+    }, options)])
 
   })
 
@@ -75,11 +73,14 @@ function mount(app, options){
   app.get(options.mountpath + '/logout', function(req, res, next){
     
     if(req.session){
-      req.session.destroy();  
+      req.session.destroy();
     }
     
     req.logout();
-    res.redirect('/');
+
+    process.nextTick(function(){
+      res.redirect('/');
+    })
     
   })
 }
@@ -241,6 +242,7 @@ function setup_supplychain(app, options){
   })
 
   app.on('login:oauth', function(login_packet, done){
+
     var existinguser = login_packet.user;
     var provider = login_packet.provider;
     var profile = login_packet.profile;
@@ -269,6 +271,7 @@ function setup_supplychain(app, options){
       
     */
     else{
+
       loaduser(profile.id, provider, function(error, user){
         if(user){
           ensureprofile(user, provider, profile, function(){
@@ -300,8 +303,8 @@ module.exports = function(app, options){
   if(!options.id){
     throw new Error('DiggerPassport requires an app id to distinquish between other apps');
   }
-  
-   /*
+
+  /*
     
     only save the id of the user into the browser cookie
     

@@ -34,11 +34,11 @@ module.exports = function(){
 
   var fn = oauth('github', 2, GithubStrategy);
 
-  fn.apply(null, args, {
+  fn.apply(null, args.concat([{
     extract:function(profile){
 
       return {};
 
     }
-  });
+  }]));
 }

@@ -53,9 +53,11 @@ module.exports = function(app, options, api){
 
   app.post(mountpath,
     passport.authenticate('local', {
-      successRedirect: options.httproutes.success,
       failureRedirect: options.httproutes.failure
-    })
+    }),
+    function(req, res) {
+      res.redirect(options.httproutes.success || '/');
+    }
   )
 }
 

@@ -34,7 +34,7 @@ module.exports = function(){
 
   var fn = oauth('dropbox', 1, DropboxStrategy);
 
-  fn.apply(null, args, {
+  fn.apply(null, args.concat([{
     extract:function(profile){
 
       return {
@@ -42,5 +42,5 @@ module.exports = function(){
       };
 
     }
-  });
+  }]))
 }

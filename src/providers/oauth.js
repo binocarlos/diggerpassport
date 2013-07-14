@@ -74,8 +74,8 @@ module.exports = function(name, version, Strategy, passportoptions){
         }
       }
 
-      if(api.extract){
-        _.extend(profile, api.extract(rawprofile));
+      if(api && api.extract){
+        profile = _.extend({}, profile, api.extract(rawprofile));
       }
 
       var login_packet = {
@@ -84,20 +84,27 @@ module.exports = function(name, version, Strategy, passportoptions){
         user:req.user
       }
 
-      app.emit('login:oauth', login_packet, done);
+      app.emit('login:oauth', login_packet, function(error, user){
+        console.log('-------------------------------------------');
+        console.log('sending done');
+        return done(null, user);
+      });
     }
 
     var strategy_instance = new Strategy(strategyOptions, oauthhandler);
 
     passport.use(strategy_instance);
 
+    var httproutes = options.httproutes || {};
+
     var auth_fn = passport.authenticate(name, _.extend({}, passportoptions));
-    var return_fn = passport.authenticate(name,  _.extend({}, {
-      successRedirect: options.httproutes.success,
-      failureRedirect: options.httproutes.failure
+    var return_fn = passport.authenticate(name,  _.extend({}, {      
+      failureRedirect: httproutes.failure || '/'
     }))
 
     app.get(base_route, auth_fn);
-    app.get(base_route + '/callback', return_fn);
+    app.get(base_route + '/callback', return_fn, function(req, res) {
+      res.redirect(httproutes.success || '/');
+    })
   }
 }
