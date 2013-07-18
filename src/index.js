@@ -34,8 +34,18 @@ _.each(fs.readdirSync(__dirname + '/providers'), function(filename){
 function mount(app, options){
 
   options = _.defaults(options, {
-    mountpath:'/login',
-    httproutes:{}
+    id:'passportid',
+    mouthpath:'/auth',
+    supplychain:null,
+    httproutes:{
+      success:'/',
+      failure:'/?loginmessage=incorrect details'
+    },
+    redis:{
+      port:6379,
+      hostname:'127.0.0.1'
+    },
+    providers:{}
   })
 
   var mountpath = options.mountpath;
@@ -215,6 +225,7 @@ function setup_supplychain(app, options){
   }
 
   app.on('user:load', loaduserid);
+  app.on('user:loadname', loaduser);
 
   app.on('login:local', function(login_packet, done){
     loaduser(login_packet.username, 'local', function(error, user){
@@ -371,6 +382,103 @@ module.exports = function(app, options){
     app.on('user:serialize', serialize_user);
     app.on('user:deserialize', deserialize_user);
   }
+
+  /*
   
+    this is for when we have local users that register and save
+    
+  */
+  if(options.localregister){
+    
+    options = _.defaults(options, {
+      id:'passportid',
+      mouthpath:'/auth',
+      supplychain:null,
+      createuser:function(done){
+        done();
+      }
+    })
+
+    /*
+    
+      the registration handler - first check the db for an existing user of that name
+
+      create the user and set it's #id to the username
+      
+    */
+    app.post(options.mountpath + '/local/register', function(req, res, next){
+
+      app.emit('user:loadname', req.body.username, 'local', function(error, user){
+
+        if(error || user){
+          res.json({
+            ok:false,
+            error:error || 'this user already exists'
+          })
+        }
+        else{
+          app.emit('user:local:register', req.body || {}, function(error, userdata){
+
+            if(error){
+              res.json({
+                ok:false,
+                error:error
+              })
+              return;
+            }
+
+            app.emit('user:load', userdata.id, function(error, user){
+
+              if(!user){
+                res.json({
+                  ok:false,
+                  error:'there was a problem loading the user back'
+                })
+              }
+              else{
+
+                options.createuser(user, function(){
+                  user.save().ship(function(){
+                    res.json({
+                      ok:true,
+                      user:user.get(0)
+                    })
+                  })
+                })
+              }
+            })
+          })
+        }
+      })
+      
+    })
+
+    app.post(options.mountpath + '/local/save', function(req, res, next){
+
+      if(!req.user){
+        res.json({
+          ok:false,
+          error:'not logged in'
+        })
+        return;
+      }
+
+      app.emit('user:local:save', req.user.id, req.body, function(error, userdata){
+        if(error){
+          res.json({
+            ok:false,
+            error:error
+          })
+        }
+        else{
+          res.json({
+            ok:true,
+            user:userdata
+          })
+        }
+      })
+      
+    })
+  }
 
 }

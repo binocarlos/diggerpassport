@@ -1,6 +1,6 @@
 {
   "name": "diggerpassport",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Wrapper for multiple passport routes on a diggerexpress app",
   "main": "src/index.js",
   "scripts": {
